@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ContentModelStore">
+    <e p="C:\Users\johan.andersson\.Rider2019.2\system\extResources" t="IncludeRecursive" />
+    <e p="C:\Users\johan.andersson\.Rider2019.2\system\resharper-host\local\Transient\ReSharperHost\v192\SolutionCaches\_Sailboat.566141199.00" t="ExcludeRecursive" />
+    <e p="D:\Projects\Futuregames\Unity\Sailboat" t="IncludeRecursive">
+      <e p="Assembly-CSharp-Editor.csproj" t="IncludeRecursive" />
+      <e p="Assembly-CSharp.csproj" t="IncludeRecursive" />
+      <e p="Assets" t="Include">
+        <e p="MeshSaver" t="Include">
+          <e p="Editor" t="Include">
+            <e p="MeshSaverEditor.cs" t="Include" />
+          </e>
+        </e>
+        <e p="Scripts" t="Include">
+          <e p="Physics" t="Include">
+            <e p="Buoyancy.cs" t="Include" />
+          </e>
+          <e p="Water" t="Include">
+            <e p="CameraMovement.cs" t="Include" />
+            <e p="SeaComputeShader.compute" t="Include" />
+            <e p="SeaController.cs" t="Include" />
+          </e>
+        </e>
+        <e p="WaterShader.shader" t="Include" />
+        <e p="Wispy Sky" t="Include">
+          <e p="ReadMe.txt" t="Include" />
+        </e>
+      </e>
+      <e p="obj" t="ExcludeRecursive" />
+      <e p="Packages" t="ExcludeRecursive" />
+      <e p="Sailboat.sln" t="IncludeFlat" />
+      <e p="Temp\bin" t="ExcludeRecursive" />
+    </e>
+  </component>
+</project>

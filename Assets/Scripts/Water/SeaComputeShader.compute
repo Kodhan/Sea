@@ -1,0 +1,154 @@
+﻿#pragma kernel GenerateMesh
+
+uint SeaSize;         
+float SeaResolution;
+uint VerticesPerSide;
+
+RWStructuredBuffer<float3> Vertices;
+RWStructuredBuffer<float2> Uvs;
+RWStructuredBuffer<int> Triangles;
+
+[numthreads(1,1,1)]
+void GenerateMesh(uint3 id : SV_DispatchThreadID)
+{
+    float offset = float(SeaResolution * SeaSize * 0.5f);
+    float maxSize = SeaSize * SeaResolution;
+	//Creating verticies & Uvs
+	for (uint i = 0; i < VerticesPerSide; i++)
+	{
+		for (uint j = 0; j < VerticesPerSide; j++)
+		{
+			Vertices[i * VerticesPerSide + j] = float3(j * SeaResolution, 0, i * SeaResolution) - offset;
+			Uvs[i * VerticesPerSide + j] = (float2(j * SeaResolution, i * SeaResolution) - offset);
+		}
+	}
+
+	int nrVerticies = VerticesPerSide * VerticesPerSide;
+
+	uint2 index = uint2(0,0);
+	uint triangleIndex = 0;
+	int size = nrVerticies * 6;
+
+	//Creating triangles
+	for (int k = 0; k < nrVerticies; k++)
+	{
+		
+		index.x = k / VerticesPerSide;
+		index.y = k % VerticesPerSide;
+		
+		if (index.x == SeaSize || index.y == SeaSize)
+			continue;
+		
+		Triangles[triangleIndex++] = index.x + index.y * VerticesPerSide; // (0, 0) bottom left
+		Triangles[triangleIndex++] = index.x + (index.y + 1) * VerticesPerSide; // (0, 1) top left
+		Triangles[triangleIndex++] = index.x + 1 + (index.y + 1) * VerticesPerSide; // (1, 1) top right
+
+		Triangles[triangleIndex++] = index.x + 1 + (index.y + 1) * VerticesPerSide; // (1, 1) top right
+		Triangles[triangleIndex++] = index.x + 1 + index.y * VerticesPerSide; // (1, 0) bottom right
+		Triangles[triangleIndex++] = index.x + index.y * VerticesPerSide; // (0, 0) bottom left
+	}
+}
+
+#pragma kernel UpdateMesh
+
+RWStructuredBuffer<float3> ActiveVertices;
+Texture2D NoiseTexture;
+uint SizePerSide;
+float WaveLength = 0.5;
+float Amplitude;
+float Speed;
+float2 Direction;
+float Time;
+float Steepness;
+static float k = 6.28318530718f / 10.0f;
+
+[numthreads(1, 1, 1)]
+void UpdateMesh(uint3 id : SV_DispatchThreadID)
+{
+	float3 currentVector  = ActiveVertices[id.x * SizePerSide + id.y];
+   // float b = 1 - (Steepness * dot(normalize(Direction)
+
+	float f = (k/WaveLength) * (dot(normalize(Direction), float2(currentVector.x, currentVector.z)) - Time * Speed);
+	f = (sin(f) + 1) * 0.5f;
+    f =  pow(f, Steepness);
+    currentVector.y = sin(f);
+    //lerp(NoiseTexture[currentIndex], NoiseTexture[nextIndex], (Time % 1)) * Height;
+    ActiveVertices[id.x * SizePerSide + id.y] = currentVector;
+  
+}
+
+#pragma kernel RecalculateNormals
+
+RWStructuredBuffer<float3> Points;
+RWStructuredBuffer<float3> Normals;
+uint VertPerSide;
+float3 firstLine;
+float3 secondLine;
+
+float3 normal;
+[numthreads(1, 1, 1)]
+void RecalculateNormals(uint3 id : SV_DispatchThreadID)
+{
+/*
+        for (int x = 0; x < VertPerSide - 1; x++)
+        {
+            for (int y = 0; y < VertPerSide - 1; y++)
+            {
+                int leftCornerIndex = y * VertPerSide + x;
+                
+                //First triangle
+                firstLine =  Points[leftCornerIndex] - Points[leftCornerIndex + 1 + VertPerSide];
+                secondLine =  Points[leftCornerIndex] - Points[leftCornerIndex + 1];
+                normal = float3(firstLine.y * secondLine.z - firstLine.z * secondLine.y,
+                                             firstLine.z * secondLine.x - firstLine.x - secondLine.z,
+                                             firstLine.x * secondLine.y - firstLine.y * secondLine.x);
+               
+                Normals[leftCornerIndex]            += normal;
+                Normals[leftCornerIndex + 1]        += normal;
+                Normals[leftCornerIndex + 1 + VertPerSide] += normal;
+                
+                
+                //Second triangle
+                firstLine = Points[leftCornerIndex] - Points[leftCornerIndex + VertPerSide];
+                secondLine = Points[leftCornerIndex] - Points[leftCornerIndex + 1 + VertPerSide];
+
+                normal = float3(firstLine.y * secondLine.z - firstLine.z * secondLine.y,
+                                       firstLine.z * secondLine.x - firstLine.x - secondLine.z,
+                                       firstLine.x * secondLine.y - firstLine.y * secondLine.x);
+                                       
+                Normals[leftCornerIndex]            += normal;
+                Normals[leftCornerIndex + VertPerSide]     += normal;
+                Normals[leftCornerIndex + 1 + VertPerSide] += normal;
+            }
+        }
+
+ */
+     
+   if(id.x % VerticesPerSide == VertPerSide - 1 || id.x / VerticesPerSide == VertPerSide -1)
+        return;      
+   
+    //First triangle
+    float3 firstLine = Points[id.x] - Points[id.x + 1 + VertPerSide];
+    float3 secondLine =  Points[id.x] - Points[id.x + 1];
+    float3 normal = float3(firstLine.y * secondLine.z - firstLine.z * secondLine.y,
+                           firstLine.z * secondLine.x - firstLine.x - secondLine.z,
+                           firstLine.x * secondLine.y - firstLine.y * secondLine.x);
+   
+    Normals[id.x]            += normal;
+    Normals[id.x + 1]        += normal;
+    Normals[id.x + 1 + VertPerSide] += normal;
+    
+     //Second triangle
+    float3 firstLineX = Points[id.x] - Points[id.x + VertPerSide];
+    float3 secondLineX = Points[id.x] - Points[id.x + 1 + VertPerSide];
+    
+    normal = float3(firstLineX.y * secondLineX.z - firstLineX.z * secondLineX.y,
+                    firstLineX.z * secondLineX.x - firstLineX.x - secondLineX.z,
+                    firstLineX.x * secondLineX.y - firstLineX.y * secondLineX.x);
+                           
+    Normals[id.x]                   += normal;
+    Normals[id.x + VertPerSide]     += normal;
+    Normals[id.x + 1 + VertPerSide] += normal;
+ 
+}
+
